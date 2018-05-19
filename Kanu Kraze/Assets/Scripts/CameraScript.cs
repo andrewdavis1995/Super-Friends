@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CameraScript : MonoBehaviour
 {
-    private Transform _target;
+    private PlayerScript _target;
     private bool _transitioning = false;
     private float _transitionDuration = .65f;
 
@@ -17,13 +17,13 @@ public class CameraScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!_transitioning)
+        if (!_transitioning && _target.Alive)
         {
-            transform.position = new Vector3(_target.position.x + 5f, _target.position.y + 2f, -25);
+            transform.position = new Vector3(_target.transform.position.x + 5f, _target.transform.position.y + 2f, -25);
         }
     }
 
-    public void ChangePlayer(Transform target)
+    public void ChangePlayer(PlayerScript target)
     {
         _target = target;
         _transitioning = true;
@@ -41,12 +41,11 @@ public class CameraScript : MonoBehaviour
             t += Time.deltaTime * (Time.timeScale / _transitionDuration);
             //t +=(Time.timeScale / transitionDuration);
 
-            var destination = new Vector3(_target.position.x+ 5f, _target.position.y + 2f, -25);
+            var destination = new Vector3(_target.transform.position.x+ 5f, _target.transform.position.y + 2f, -25);
 
             transform.position = Vector3.Lerp(startingPos, destination, t);
             yield return 0;
         }
         _transitioning = false;
     }
-
 }

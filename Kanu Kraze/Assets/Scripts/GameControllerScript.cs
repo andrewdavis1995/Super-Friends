@@ -1,12 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameControllerScript : MonoBehaviour
 {
     public CameraScript CameraScript;
 
-    private List<PlayerScript> _players = new List<PlayerScript>();
-    private int _selectedPlayer = 0;
+    public List<PlayerScript> Players = new List<PlayerScript>();
+    public int SelectedPlayer = 0;
 
     // Use this for initialization
     void Start()
@@ -15,13 +17,18 @@ public class GameControllerScript : MonoBehaviour
         foreach (var player in goPlayers)
         {
             var script = player.GetComponentInChildren<PlayerScript>();
-            _players.Add(script);
+            Players.Add(script);
         }
 
-        if (_players.Count > 0)
+        if (Players.Count > 0)
         {
-            _players[0].Active = true;
-            CameraScript.ChangePlayer(_players[0].transform);
+            Players[0].Activate();
+            CameraScript.ChangePlayer(Players[0]);
+            // set all players to follow startup
+            for(var i = 1; i < Players.Count; i++)
+            {
+                Players[i].Follow(Players[0]);
+            }
         }
     }
 
@@ -32,21 +39,41 @@ public class GameControllerScript : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Q) && Input.GetKey(KeyCode.LeftControl))
             {
-                _players[_selectedPlayer].Active = false;
+                var player = NextPlayer();
 
-                if (Input.GetKey(KeyCode.LeftShift))
-                    _selectedPlayer--;
-                else
-                    _selectedPlayer++;
+                if (!Players.Any(p => p.Alive))
+                {
+                    // UH OH! Game over
+                    Debug.Log("GAME OVER");
+                }
 
-                if (_selectedPlayer >= _players.Count)
-                    _selectedPlayer = 0;
-                if (_selectedPlayer < 0)
-                    _selectedPlayer = _players.Count - 1;
-
-                _players[_selectedPlayer].Active = true;
-                CameraScript.ChangePlayer(_players[_selectedPlayer].transform);
+                while (!player.Alive)
+                {
+                    player = NextPlayer();
+                    return;
+                }
+                player.Activate();
+                CameraScript.ChangePlayer(Players[SelectedPlayer]);
             }
         }
+    }
+
+    public PlayerScript NextPlayer()
+    {
+         var original = Players[SelectedPlayer];
+
+        if (Input.GetKey(KeyCode.LeftShift))
+            SelectedPlayer--;
+        else
+            SelectedPlayer++;
+
+        if (SelectedPlayer >= Players.Count)
+            SelectedPlayer = 0;
+        if (SelectedPlayer < 0)
+            SelectedPlayer = Players.Count - 1;
+
+        original.Follow(Players[SelectedPlayer]);
+
+        return Players[SelectedPlayer];
     }
 }

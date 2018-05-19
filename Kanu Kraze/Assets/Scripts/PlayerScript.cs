@@ -1,9 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Linq;
+using System;
 
 public class PlayerScript : MonoBehaviour
 {
+
+    public GameControllerScript Controller;
+
     // components
     public SpriteRenderer[] Renderers;
 
@@ -18,18 +22,19 @@ public class PlayerScript : MonoBehaviour
     public float Health = 100;
     public bool Camera = true;
 
-
     public bool Active = false;
+    public bool Alive = true;
 
-
-
-    public JohnScript _johnScript;
+    public JohnScript JohnScript;
+    public FollowScript FollowScript;
 
     // attributes
     float WALK_SPEED = 2.7f;
     float JUMP_SPEED = 1000;
     public float LEFT_LIMIT;
     float _lastPos = 1000;
+
+    public bool Walking = true;
 
 
     // misc
@@ -50,16 +55,55 @@ public class PlayerScript : MonoBehaviour
         DistToGround = LegCollider.GetComponent<Collider2D>().bounds.extents.y;
 
         Renderers = GetComponentsInChildren<SpriteRenderer>();
+
+        DisablePlayerCollisions();
+    }
+
+    private void DisablePlayerCollisions()
+    {
+        var currentColliders = GetComponentsInChildren<BoxCollider2D>();
+
+        var players = GameObject.FindGameObjectsWithTag("Player");
+        foreach (var player in players)
+        {
+            var playerColliders = GetComponentsInChildren<BoxCollider2D>();
+            foreach (var pC in playerColliders)
+            {
+                foreach (var cC in currentColliders)
+                {
+                    Physics2D.IgnoreCollision(cC, pC);
+                }
+            }
+        }
+    }
+
+    public void Follow(PlayerScript target)
+    {
+        Active = false;
+        // enable following
+        FollowScript.enabled = true;
+        FollowScript.SetTarget(target);
     }
 
     public void BeginWalk()
     {
+        Walking = true;
         animators[2].SetTrigger("Walk");
         animators[1].SetTrigger("Walk");
         animators[0].SetTrigger("Walk");
     }
+
+    public void Activate()
+    {
+        // disable following
+        FollowScript.Reset();
+        // set follow target to -9999
+        Active = true;
+    }
+
     public void StopWalk()
     {
+        Walking = false;
         animators[2].SetTrigger("Stop");
         animators[1].SetTrigger("Stop");
         animators[0].SetTrigger("Stop");
@@ -83,14 +127,15 @@ public class PlayerScript : MonoBehaviour
 
             var dampener = 1f;
 
-            if (_johnScript != null && _johnScript.Climbing)
+            if (JohnScript != null && JohnScript.Climbing)
             {
                 dampener = .5f;
-                _johnScript.ClimberAnim.enabled = true;
+                JohnScript.ClimberAnim.enabled = true;
             }
 
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.A))
             {
+                if(!Walking)
                 //if (onGround)
                 {
                     BeginWalk();
@@ -131,19 +176,21 @@ public class PlayerScript : MonoBehaviour
             {
                 StartCoroutine(JumpAnim());
             }
-        }
 
-        if (!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))
-        {
-            StopWalk();
-            if (!Input.GetKey(KeyCode.W) && !Input.GetKey(KeyCode.S))
+            if (!Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))
             {
-                if (_johnScript != null)
-                {
-                    _johnScript.ClimberAnim.enabled = false;
-                }
-            }
+                if (Walking)
+                    StopWalk();
 
+                if (!Input.GetKey(KeyCode.W) && !Input.GetKey(KeyCode.S))
+                {
+                    if (JohnScript != null)
+                    {
+                        JohnScript.ClimberAnim.enabled = false;
+                    }
+                }
+
+            }
         }
     }
 
@@ -155,7 +202,7 @@ public class PlayerScript : MonoBehaviour
     }
 
 
-    void Jump(float scale)
+    public void Jump(float scale)
     {
         CheckGrounded();
 
@@ -197,6 +244,7 @@ public class PlayerScript : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D collision)
     {
+
     }
 
     void OnTriggerEnter2D(Collider2D collision)
@@ -207,13 +255,10 @@ public class PlayerScript : MonoBehaviour
         //    GameManager.CoinsCollected(1);
         //}
 
-        //if (collision.transform.tag == "Death")
-        //{
-        //    Camera = false;
-        //    Ended = true;
-        //    MovementAllowed = false;
-        //    GameManager.Lost();
-        //}
+        if (collision.transform.tag == "Death")
+        {
+            Die();
+        }
 
         //if (collision.transform.tag == "Enemy")
         //{
@@ -237,6 +282,27 @@ public class PlayerScript : MonoBehaviour
         //        // show popup
         //    }
         //}
+    }
+
+    private void Die()
+    {
+        Alive = false;
+
+        var player = Controller.NextPlayer();
+
+        if (!Controller.Players.Any(p => p.Alive))
+        {
+            // UH OH! Game over
+            Debug.Log("GAME OVER");
+            return;
+        }
+
+        while (!player.Alive)
+        {
+            player = Controller.NextPlayer();
+        }
+        player.Activate();
+        Controller.CameraScript.ChangePlayer(Controller.Players[Controller.SelectedPlayer]);
     }
 
     void OnCollisionEnter2D(Collision2D collision)
