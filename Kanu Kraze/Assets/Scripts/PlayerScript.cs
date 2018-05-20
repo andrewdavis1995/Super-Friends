@@ -2,16 +2,21 @@
 using System.Collections;
 using System.Linq;
 using System;
+using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class PlayerScript : MonoBehaviour
 {
 
     public GameControllerScript Controller;
 
+    public Image StatusImage;
+    public Sprite[] StatusImages;   // inactive, active, dead
+
     // components
     public SpriteRenderer[] Renderers;
 
-    Animator[] animators; // 0 = close arm, 1 = far arm
+    Animator[] animators; // 0 = close arm, 1 = far arm, 2 legs
     public Rigidbody2D RigidBody;
     Quaternion rotation;
     public Transform LegCollider;
@@ -34,12 +39,14 @@ public class PlayerScript : MonoBehaviour
     public float LEFT_LIMIT;
     float _lastPos = 1000;
 
+    public Sprite[] PunchImages;
+
     public bool Walking = true;
 
+    private List<GameObject> InPunchRange = new List<GameObject>();
 
     // misc
     public float DistToGround;
-
 
 
     // Use this for initialization
@@ -83,6 +90,8 @@ public class PlayerScript : MonoBehaviour
         // enable following
         FollowScript.enabled = true;
         FollowScript.SetTarget(target);
+        if (Alive)
+            StatusImage.sprite = StatusImages[0];
     }
 
     public void BeginWalk()
@@ -99,6 +108,7 @@ public class PlayerScript : MonoBehaviour
         FollowScript.Reset();
         // set follow target to -9999
         Active = true;
+        StatusImage.sprite = StatusImages[1];
     }
 
     public void StopWalk()
@@ -135,7 +145,7 @@ public class PlayerScript : MonoBehaviour
 
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.A))
             {
-                if(!Walking)
+                if (!Walking)
                 //if (onGround)
                 {
                     BeginWalk();
@@ -191,7 +201,51 @@ public class PlayerScript : MonoBehaviour
                 }
 
             }
+
+            HandlePunch();
         }
+    }
+
+    private bool _punching = false;
+
+    private void HandlePunch()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (!_punching)
+                StartCoroutine(DoPunch());
+        }
+    }
+
+    IEnumerator DoPunch()
+    {
+        _punching = true;
+        animators[1].enabled = false;
+
+        for (var i = 0; i < InPunchRange.Count; i++)
+        {
+            var impact = InPunchRange[i];
+
+            // get enemy and remove health
+            // get statue
+            var citizen = impact.GetComponent<CitizenScript>();
+            if (citizen != null)
+            {
+                var destroyed = citizen.Hit(15);
+                if (destroyed) InPunchRange.Remove(impact);
+            }
+        }
+
+        // loop through images
+        for (int i = 0; i < PunchImages.Length; i++)
+        {
+            Renderers[3].sprite = PunchImages[i];
+            yield return new WaitForSeconds(.025f);
+        }
+
+        animators[1].enabled = true;
+        _punching = false;
+        yield return new WaitForSeconds(0);
     }
 
     private IEnumerator JumpAnim()
@@ -244,11 +298,13 @@ public class PlayerScript : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-
+        InPunchRange.Remove(collision.gameObject);
     }
 
     void OnTriggerEnter2D(Collider2D collision)
     {
+        InPunchRange.Add(collision.gameObject);
+
         //if (collision.transform.tag == "Coin")
         //{
         //    GameObject.Destroy(collision.gameObject);
@@ -288,21 +344,31 @@ public class PlayerScript : MonoBehaviour
     {
         Alive = false;
 
-        var player = Controller.NextPlayer();
-
         if (!Controller.Players.Any(p => p.Alive))
         {
             // UH OH! Game over
             Debug.Log("GAME OVER");
+            StatusImage.sprite = StatusImages[2];
             return;
         }
 
-        while (!player.Alive)
+        if (Active)
         {
-            player = Controller.NextPlayer();
+            var player = Controller.NextPlayer();
+
+            foreach (var pl in Controller.Players)
+            {
+                pl.FollowScript.SetTarget(null);
+            }
+
+            while (!player.Alive)
+            {
+                player = Controller.NextPlayer();
+            }
+            player.Activate();
         }
-        player.Activate();
         Controller.CameraScript.ChangePlayer(Controller.Players[Controller.SelectedPlayer]);
+        StatusImage.sprite = StatusImages[2];
     }
 
     void OnCollisionEnter2D(Collision2D collision)

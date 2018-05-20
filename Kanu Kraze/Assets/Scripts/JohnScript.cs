@@ -31,6 +31,8 @@ public class JohnScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!Player.Active) return;
+
         if (Input.GetKey(KeyCode.W))
         {
             if (Climbing)

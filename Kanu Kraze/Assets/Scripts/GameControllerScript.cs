@@ -50,7 +50,6 @@ public class GameControllerScript : MonoBehaviour
                 while (!player.Alive)
                 {
                     player = NextPlayer();
-                    return;
                 }
                 player.Activate();
                 CameraScript.ChangePlayer(Players[SelectedPlayer]);

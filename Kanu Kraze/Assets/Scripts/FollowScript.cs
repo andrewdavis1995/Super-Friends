@@ -23,11 +23,17 @@ public class FollowScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (_target == null || !_target.Alive)
+            return;
+
+        if (_player.JohnScript != null && _player.JohnScript.Climbing)
+            return;
+
         _timeCount += Time.deltaTime;
         if (_timeCount > 2.5f)
         {
             _timeCount = 0;
-            if (_target.onGround)
+            if (_target.onGround || (_target.JohnScript != null && _target.JohnScript.Climbing == true))
             {
                 _xPosition = _target.transform.position.x;
             }
