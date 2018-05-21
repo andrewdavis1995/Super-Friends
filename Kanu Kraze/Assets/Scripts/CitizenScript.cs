@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,19 +24,29 @@ public class CitizenScript : MonoBehaviour
 
     public bool Hit(int hitPoints)
     {
-        var iNumRubble = Random.Range(2, 9);
+        Health -= hitPoints;
+        StartCoroutine(CreateRubble());
+        if (Health < 0)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private IEnumerator CreateRubble()
+    {
+        yield return new WaitForSeconds(.3f);
+        var iNumRubble = UnityEngine.Random.Range(2, 9);
         for (var i = 0; i < iNumRubble; i++)
         {
-            var iRubble = Random.Range(0, Rubble.Length);
-            var obj = Instantiate(Rubble[iRubble], transform.position + new Vector3(Random.Range(-1f, 1f), 1f, -1f), Quaternion.identity, transform);
-            obj.GetComponent<Rigidbody2D>().AddRelativeForce(new Vector2(Random.Range(-80, 80), Random.Range(40, 100)));
+            var iRubble = UnityEngine.Random.Range(0, Rubble.Length);
+            var obj = Instantiate(Rubble[iRubble], transform.position + new Vector3(UnityEngine.Random.Range(-1f, 1f), 1f, -1f), Quaternion.identity, transform);
+            obj.GetComponent<Rigidbody2D>().AddRelativeForce(new Vector2(UnityEngine.Random.Range(-80, 80), UnityEngine.Random.Range(40, 100)));
         }
 
-        Health -= hitPoints;
         if (Health < 0)
         {
             Destroy(gameObject);
-            return true;
         }
         else if (Health < 20)
         {
@@ -49,7 +60,5 @@ public class CitizenScript : MonoBehaviour
         {
             Renderer.sprite = Sprites[0];
         }
-        return false;
     }
-
 }

@@ -27,7 +27,7 @@ public class AndrewScript : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.transform.tag == "Panel")
+        if (collision.transform.tag == "Panel" && Player.Active)
         {
                 _inPanelBounds = null;
                 collision.GetComponentInParent<FirewallScript>().Instruction.SetActive(false);
@@ -35,7 +35,7 @@ public class AndrewScript : MonoBehaviour
     }
     void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.transform.tag == "Panel")
+        if (collision.transform.tag == "Panel" && Player.Active)
         {
             if (!collision.GetComponentInParent<FirewallScript>().Pressed)
             {
