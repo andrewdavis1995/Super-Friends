@@ -66,6 +66,10 @@
     <Compile Include="Assets\Scripts\FollowScript.cs" />
     <Compile Include="Assets\Scripts\GameControllerScript.cs" />
     <Compile Include="Assets\Scripts\JohnScript.cs" />
+    <Compile Include="Assets\Scripts\Platform\BasePlatformScript.cs" />
+    <Compile Include="Assets\Scripts\Platform\ButtonScript.cs" />
+    <Compile Include="Assets\Scripts\Platform\HorizontalMovingPlatform.cs" />
+    <Compile Include="Assets\Scripts\Platform\VerticalMovingPlatform.cs" />
     <Compile Include="Assets\Scripts\PlayerScript.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>C:/Users/asuth/Documents/Git/Super Friends/Kanu Kraze/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>

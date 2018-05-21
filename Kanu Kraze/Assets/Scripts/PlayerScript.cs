@@ -44,6 +44,7 @@ public class PlayerScript : MonoBehaviour
     public bool Walking = true;
 
     private List<GameObject> InPunchRange = new List<GameObject>();
+    private GameObject ActiveButton = null;
 
     // misc
     public float DistToGround;
@@ -203,6 +204,16 @@ public class PlayerScript : MonoBehaviour
             }
 
             HandlePunch();
+            HandleButtonPush();
+        }
+    }
+
+    private void HandleButtonPush()
+    {
+        if (Input.GetKeyDown(KeyCode.E) && ActiveButton != null)
+        {
+            ActiveButton.GetComponent<ButtonScript>().Press();
+            ActiveButton = null;
         }
     }
 
@@ -299,17 +310,29 @@ public class PlayerScript : MonoBehaviour
     private void OnTriggerExit2D(Collider2D collision)
     {
         InPunchRange.Remove(collision.gameObject);
+
+        if (collision.transform.tag == "Button")
+        {
+            if (!collision.gameObject.GetComponent<ButtonScript>().Pressed)
+            {
+                ActiveButton = null;
+                collision.gameObject.GetComponent<ButtonScript>().Instruction.SetActive(false);
+            }
+        }
     }
 
     void OnTriggerEnter2D(Collider2D collision)
     {
         InPunchRange.Add(collision.gameObject);
 
-        //if (collision.transform.tag == "Coin")
-        //{
-        //    GameObject.Destroy(collision.gameObject);
-        //    GameManager.CoinsCollected(1);
-        //}
+        if (collision.transform.tag == "Button")
+        {
+            if (!collision.gameObject.GetComponent<ButtonScript>().Pressed)
+            {
+                ActiveButton = collision.gameObject;
+                collision.gameObject.GetComponent<ButtonScript>().Instruction.SetActive(true);
+            }
+        }
 
         if (collision.transform.tag == "Death")
         {
@@ -377,6 +400,7 @@ public class PlayerScript : MonoBehaviour
         if (collision.gameObject.tag.ToLower().Contains("platform")) //  && vel.y < 0
         {
             onGround = true;
+            transform.parent = collision.transform;
         }
 
         if (collision.transform.tag == "BouncyPlatform" && vel.y < 0)
@@ -387,4 +411,13 @@ public class PlayerScript : MonoBehaviour
             anim.SetTrigger("Stop");
         }
     }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.tag.ToLower().Contains("platform")) //  && vel.y < 0
+        {
+            transform.parent = null;
+        }
+    }
+
 }
